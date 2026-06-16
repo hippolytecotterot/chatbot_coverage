@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Vectorstore / generated data
+vectorstore/
+
+# Script-generated files
+coverage.png
+failed_urls.txt
+
+# Logs
+*.log

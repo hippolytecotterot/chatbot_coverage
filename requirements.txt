@@ -1,0 +1,28 @@
+# LLM / LangChain
+anthropic
+langchain-anthropic
+langchain-core
+langchain-chroma
+langchain-huggingface
+langchain-text-splitters
+
+# Vector store
+chromadb
+
+# Embeddings
+sentence-transformers
+
+# Database
+psycopg2-binary
+
+# Scraping
+requests
+trafilatura
+
+# API
+fastapi
+uvicorn[standard]
+
+# Utilities
+python-dotenv
+pydantic

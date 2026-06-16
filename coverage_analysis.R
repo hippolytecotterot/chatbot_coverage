@@ -1,0 +1,39 @@
+library(dplyr)
+library(ggplot2)
+
+df <- read.csv("coverage.csv", encoding = "UTF-8")
+
+moyennes <- df |>
+  group_by(categorie) |>
+  summarise(
+    note_moyenne = mean(note, na.rm = TRUE),
+    n_questions  = n()
+  ) |>
+  arrange(desc(note_moyenne))
+
+print(moyennes)
+
+ggplot(moyennes, aes(x = reorder(categorie, note_moyenne), y = note_moyenne, fill = note_moyenne)) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = sprintf("%.1f", note_moyenne)),
+    hjust = -0.2, size = 3.5
+  ) +
+  coord_flip() +
+  scale_fill_gradient(low = "#AED6F1", high = "#1A5276", guide = "none") +
+  scale_y_continuous(limits = c(0, 11), breaks = 0:10) +
+  labs(
+    title    = "Note moyenne du chatbot par catégorie de questions",
+    subtitle = "Évaluation de la couverture documentaire",
+    x        = NULL,
+    y        = "Note moyenne (/10)",
+    caption  = paste("Total :", nrow(df), "questions évaluées")
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title    = element_text(face = "bold"),
+    panel.grid.major.y = element_blank()
+  )
+
+ggsave("coverage.png", width = 10, height = 6, dpi = 150)
+message("Graphique sauvegardé : coverage.png")
