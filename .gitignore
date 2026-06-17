@@ -1,3 +1,6 @@
+# Corporate CA certificate
+ca.pem
+
 # Environment variables
 .env
 .env.*

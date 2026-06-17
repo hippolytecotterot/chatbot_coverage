@@ -1,7 +1,16 @@
+import os
 from pathlib import Path
 
 import requests
 import trafilatura
+
+_CA_CERT = Path(__file__).parent / "ca.pem"
+
+# Make trafilatura (which uses requests internally) pick up the corporate CA cert.
+if _CA_CERT.exists():
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", str(_CA_CERT))
+
+_VERIFY = str(_CA_CERT) if _CA_CERT.exists() else True
 
 _HEADERS = {
     "User-Agent": (
@@ -27,7 +36,7 @@ class ArticleScraper:
                 )
                 if text and len(text) > 100:
                     return text
-            resp = requests.get(url, headers=_HEADERS, timeout=15)
+            resp = requests.get(url, headers=_HEADERS, timeout=15, verify=_VERIFY)
             if resp.status_code == 200:
                 content = trafilatura.extract(resp.text, include_comments=False, include_tables=False)
                 if content and len(content) > 100:
