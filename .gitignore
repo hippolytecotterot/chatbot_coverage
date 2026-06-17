@@ -28,6 +28,7 @@ vectorstore/
 # Script-generated files
 coverage.png
 failed_urls.txt
+debug.txt
 
 # Logs
 *.log
