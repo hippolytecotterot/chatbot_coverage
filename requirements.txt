@@ -16,8 +16,10 @@ sentence-transformers
 psycopg2-binary
 
 # Scraping
-requests
+cloudscraper
 trafilatura
+pypdf
+beautifulsoup4
 
 # API
 fastapi

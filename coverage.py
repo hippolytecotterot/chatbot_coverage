@@ -22,7 +22,7 @@ from pathlib import Path
 import anthropic
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 CSV_FILE = Path("coverage.csv")
 JUDGE_MODEL = "claude-opus-4-8"

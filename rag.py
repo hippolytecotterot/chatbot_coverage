@@ -1,4 +1,6 @@
+import os
 import sys
+import time
 from pathlib import Path
 
 from langchain_chroma import Chroma
@@ -7,7 +9,6 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from database import DatabaseManager
-from scraper import ArticleScraper
 
 _BASE = Path(__file__).parent
 _LOCAL_MODEL_PATH = _BASE / "models" / "all-MiniLM-L6-v2"
@@ -32,7 +33,13 @@ class RAGManager:
         return Chroma(persist_directory=self.vector_store_path, embedding_function=self.get_embeddings())
 
     def index_from_db(self) -> Chroma:
-        from scraper import _FAILED_LOG
+        if os.getenv("USE_PLAYWRIGHT", "false").lower() == "true":
+            from scraper_playwright import ArticleScraper, _FAILED_LOG
+            print("  Mode scraping : Playwright activé (fallback sur 403 et contenu JS-rendu)")
+        else:
+            from scraper import ArticleScraper, _FAILED_LOG
+            print("  Mode scraping : cloudscraper uniquement")
+
         _FAILED_LOG.write_text("", encoding="utf-8")
 
         db = DatabaseManager()
@@ -43,6 +50,7 @@ class RAGManager:
             print("[Error] No articles with a source URL found in the database.")
             sys.exit(1)
 
+        request_delay = float(os.getenv("SCRAPER_REQUEST_DELAY", "1"))
         print(f"  Found {len(rows)} article(s) in database.")
         docs: list[Document] = []
         for title, url in rows:
@@ -56,6 +64,7 @@ class RAGManager:
                 print(f"    ✓ {len(content)} chars")
             else:
                 print("    ✗ Could not extract content")
+            time.sleep(request_delay)
 
         if not docs:
             print("[Error] No articles could be scraped.")
