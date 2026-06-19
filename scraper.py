@@ -86,9 +86,8 @@ class ArticleScraper:
                     if content:
                         return content
             except Exception as exc:
-                if "SSL" not in type(exc).__name__ and "SSL" not in str(exc):
-                    break
-                continue
+                if "SSL" in type(exc).__name__ or "SSL" in str(exc):
+                    continue
         return None
 
     def scrape(self, url: str) -> str | None:

@@ -100,9 +100,10 @@ class ArticleScraper:
                     try_playwright = True
                 elif resp.status_code in (403, 429, 503):
                     try_playwright = True
-                    break
-            except Exception:
-                continue
+            except Exception as exc:
+                if "SSL" in type(exc).__name__ or "SSL" in str(exc):
+                    continue
+                try_playwright = True
 
         if try_playwright:
             html = _fetch_with_playwright(url)

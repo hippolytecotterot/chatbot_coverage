@@ -32,3 +32,6 @@ debug.txt
 
 # Logs
 *.log
+
+# R
+.Rhistory

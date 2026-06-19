@@ -85,6 +85,32 @@ class RAGManager:
         print(f"  Vector store saved to '{self.vector_store_path}/'.")
         return vectorstore
 
+    def add_url(self, url: str, title: str = "", vectorstore: Chroma | None = None) -> bool:
+        if os.getenv("USE_PLAYWRIGHT", "false").lower() == "true":
+            from scraper_playwright import ArticleScraper
+        else:
+            from scraper import ArticleScraper
+
+        content = ArticleScraper().scrape(url)
+        if not content:
+            print(f"  [KO] Impossible d'extraire le contenu : {url}")
+            return False
+
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            separators=["\n\n", "\n", " ", ""],
+        )
+        chunks = splitter.split_documents([Document(
+            page_content=content,
+            metadata={"source": url, "title": title or url},
+        )])
+
+        vs = vectorstore or self.load_existing()
+        vs.add_documents(chunks)
+        print(f"  [OK] {len(chunks)} chunk(s) ajoute(s) depuis : {url}")
+        return True
+
     def build_retriever(self, vectorstore: Chroma):
         return vectorstore.as_retriever(
             search_type="similarity",
