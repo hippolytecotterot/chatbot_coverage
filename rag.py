@@ -33,12 +33,7 @@ class RAGManager:
         return Chroma(persist_directory=self.vector_store_path, embedding_function=self.get_embeddings())
 
     def index_from_db(self) -> Chroma:
-        if os.getenv("USE_PLAYWRIGHT", "false").lower() == "true":
-            from scraper_playwright import ArticleScraper, _FAILED_LOG
-            print("  Mode scraping : Playwright activé (fallback sur 403 et contenu JS-rendu)")
-        else:
-            from scraper import ArticleScraper, _FAILED_LOG
-            print("  Mode scraping : cloudscraper uniquement")
+        from scraper import ArticleScraper, _FAILED_LOG
 
         _FAILED_LOG.write_text("", encoding="utf-8")
 
@@ -86,10 +81,7 @@ class RAGManager:
         return vectorstore
 
     def add_url(self, url: str, title: str = "", vectorstore: Chroma | None = None) -> bool:
-        if os.getenv("USE_PLAYWRIGHT", "false").lower() == "true":
-            from scraper_playwright import ArticleScraper
-        else:
-            from scraper import ArticleScraper
+        from scraper import ArticleScraper
 
         content = ArticleScraper().scrape(url)
         if not content:

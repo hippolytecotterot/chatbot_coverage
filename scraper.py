@@ -9,13 +9,10 @@ import pypdf
 import trafilatura
 import urllib3
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 from requests.adapters import HTTPAdapter
 
 _CA_CERT = Path(__file__).parent / "ca.pem"
-
-if _CA_CERT.exists():
-    os.environ.setdefault("REQUESTS_CA_BUNDLE", str(_CA_CERT))
-
 _VERIFY = str(_CA_CERT) if _CA_CERT.exists() else True
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -74,8 +71,23 @@ def _parse_html_bs4(html: str) -> str | None:
     return text if len(text) > 100 else None
 
 
+def _fetch_with_playwright(url: str) -> str | None:
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(ignore_https_errors=True)
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=20000)
+            html = page.content()
+            browser.close()
+            return html
+    except Exception:
+        return None
+
+
 class ArticleScraper:
     def _try_scrape(self, url: str) -> str | None:
+        try_playwright = False
         for scraper in (_scraper, _scraper_lax):
             try:
                 resp = scraper.get(url, timeout=15)
@@ -85,9 +97,20 @@ class ArticleScraper:
                     content = _parse_html(resp.text) or _parse_html_bs4(resp.text)
                     if content:
                         return content
+                    try_playwright = True
+                elif resp.status_code in (403, 429, 503):
+                    try_playwright = True
             except Exception as exc:
                 if "SSL" in type(exc).__name__ or "SSL" in str(exc):
                     continue
+                try_playwright = True
+
+        if try_playwright:
+            html = _fetch_with_playwright(url)
+            if html:
+                content = _parse_html(html) or _parse_html_bs4(html)
+                if content:
+                    return content
         return None
 
     def scrape(self, url: str) -> str | None:
@@ -105,6 +128,7 @@ class ArticleScraper:
         """Scrape a URL and return a detailed status dict instead of swallowing errors."""
         result = {"url": url, "ok": False, "method": None, "chars": 0, "error": None}
         errors: list[str] = []
+        use_playwright = False
 
         for label, scraper in (("cloudscraper", _scraper), ("cloudscraper_lax", _scraper_lax)):
             try:
@@ -125,11 +149,32 @@ class ArticleScraper:
                         if content:
                             result.update(ok=True, method=f"{label}+bs4", chars=len(content))
                             return result
-                        errors.append(f"{label} (200): trafilatura et bs4 n'ont pas pu extraire le contenu")
+                        errors.append(f"{label} (200): trafilatura et bs4 ont échoué (contenu probablement JS-rendu)")
+                        use_playwright = True
                 else:
                     errors.append(f"{label}: HTTP {resp.status_code}")
+                    if resp.status_code in (403, 429, 503):
+                        use_playwright = True
             except Exception as exc:
                 errors.append(f"{label}: {type(exc).__name__}: {exc}")
+                if "SSL" in type(exc).__name__ or "SSL" in str(exc):
+                    continue
+                use_playwright = True
+
+        if use_playwright or not errors:
+            html = _fetch_with_playwright(url)
+            if html:
+                content = _parse_html(html)
+                if content:
+                    result.update(ok=True, method="playwright+trafilatura", chars=len(content))
+                    return result
+                content = _parse_html_bs4(html)
+                if content:
+                    result.update(ok=True, method="playwright+bs4", chars=len(content))
+                    return result
+                errors.append("playwright: trafilatura et bs4 n'ont pas pu extraire le contenu")
+            else:
+                errors.append("playwright: échec du chargement de la page")
 
         result["error"] = " | ".join(errors)
         return result

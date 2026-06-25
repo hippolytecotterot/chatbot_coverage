@@ -20,6 +20,7 @@ cloudscraper
 trafilatura
 pypdf
 beautifulsoup4
+playwright
 
 # API
 fastapi
