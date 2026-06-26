@@ -11,10 +11,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from database import DatabaseManager
 
 _BASE = Path(__file__).parent
-_LOCAL_MODEL_PATH = _BASE / "models" / "all-MiniLM-L6-v2"
+_LOCAL_MODEL_PATH = _BASE / "models" / "paraphrase-multilingual-mpnet-base-v2"
 
 VECTOR_STORE_PATH = str(_BASE / "vectorstore")
-EMBEDDING_MODEL = str(_LOCAL_MODEL_PATH) if _LOCAL_MODEL_PATH.exists() else "all-MiniLM-L6-v2"
+EMBEDDING_MODEL = str(_LOCAL_MODEL_PATH) if _LOCAL_MODEL_PATH.exists() else "paraphrase-multilingual-mpnet-base-v2"
 
 
 class RAGManager:

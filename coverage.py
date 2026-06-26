@@ -61,6 +61,17 @@ def format_sources(docs) -> str:
     return "\n\n---\n\n".join(parts)
 
 
+def extract_source_urls(docs) -> str:
+    if not docs:
+        return ""
+    seen = []
+    for doc in docs:
+        url = doc.metadata.get("source", "")
+        if url and url not in seen:
+            seen.append(url)
+    return " | ".join(seen)
+
+
 def judge_response(client: anthropic.Anthropic, question: str, response: str, sources: str) -> dict:
     prompt = JUDGE_PROMPT.format(question=question, response=response, sources=sources)
     result = client.messages.create(
@@ -95,16 +106,17 @@ def main():
         print(f"[{i}/{len(rows)}] {question}")
         docs = retriever.invoke(question)
         sources = format_sources(docs)
+        source_urls = extract_source_urls(docs)
         response = chain.invoke(question)
         print(f"  RAG : {response[:150].replace(chr(10), ' ')}...")
         evaluation = judge_response(judge, question, response, sources)
         note = evaluation.get("note", -1)
         justification = evaluation.get("justification", "")
         print(f"  Note : {note}/10 — {justification}\n")
-        results.append({"categorie": categorie, "question": question, "reponse": response, "note": note})
+        results.append({"categorie": categorie, "question": question, "reponse": response, "note": note, "sources": source_urls})
 
     with CSV_FILE.open("w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=["categorie", "question", "reponse", "note"])
+        writer = csv.DictWriter(f, fieldnames=["categorie", "question", "reponse", "note", "sources"])
         writer.writeheader()
         writer.writerows(results)
     print(f"  Résultats sauvegardés dans '{CSV_FILE}'.")
